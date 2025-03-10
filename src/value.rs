@@ -7,7 +7,7 @@ pub enum Value {
   /// f64 bits
   Number(u64),
   Boolean(bool),
-  Closure(std::rc::Rc<RefCell<Prototype>>),
+  Closure(std::rc::Rc<Prototype>),
   Partial(std::rc::Rc<RefCell<Partial>>),
 }
 
@@ -105,6 +105,6 @@ impl Constant {
 pub struct Partial {
   pub arity: u8,
   pub applied: u8,
-  pub prototype: std::rc::Rc<RefCell<Prototype>>,
+  pub prototype: std::rc::Rc<Prototype>,
   pub applied_values: Vec<Value>,
 }

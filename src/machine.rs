@@ -7,14 +7,14 @@ use crate::{
 
 pub struct Machine {
   ip: usize,
-  prototype: std::rc::Rc<RefCell<Prototype>>,
+  prototype: std::rc::Rc<Prototype>,
   stack_frame: Vec<Frame>,
 }
 
 struct Frame {
   ip: usize,
   frame_info: FrameInfo,
-  prototype: std::rc::Rc<RefCell<Prototype>>,
+  prototype: std::rc::Rc<Prototype>,
 }
 
 #[derive(Clone, Copy)]
@@ -30,7 +30,7 @@ impl Machine {
     (
       Self {
         ip: 0,
-        prototype: std::rc::Rc::new(RefCell::new(proto)),
+        prototype: std::rc::Rc::new(proto),
         stack_frame: vec![],
       },
       stack,
@@ -49,7 +49,7 @@ impl Machine {
 
   fn step(&mut self, stack: &mut Stack) -> Cont {
     let instruction = {
-      let instruction = self.prototype.borrow().bytecode[self.ip];
+      let instruction = self.prototype.bytecode[self.ip];
       self.ip += 1;
       instruction
     };
@@ -78,11 +78,9 @@ impl Machine {
         Cont::Continue
       }
       crate::bytecode::Bytecode::Closure { index } => {
-        let proto = self.prototype.borrow().prototypes[index as usize].clone();
+        let proto = self.prototype.prototypes[index as usize].clone();
 
-        stack.push(crate::value::Value::Closure(std::rc::Rc::new(
-          RefCell::new(proto),
-        )));
+        stack.push(crate::value::Value::Closure(std::rc::Rc::new(proto)));
 
         Cont::Continue
       }
@@ -92,13 +90,12 @@ impl Machine {
 
         match callee {
           crate::value::Value::Closure(closure) => {
-            let closure_borrow = closure.borrow();
-            let arity = closure_borrow.arity;
+            let arity = closure.arity;
 
             match arguments.cmp(&arity) {
               std::cmp::Ordering::Less => {
                 let partial = Partial {
-                  arity: closure_borrow.arity,
+                  arity,
                   applied: args.len() as u8,
                   prototype: closure.clone(),
                   applied_values: args,
@@ -111,7 +108,7 @@ impl Machine {
                 Cont::Continue
               }
               std::cmp::Ordering::Equal => {
-                let frame_info = stack.push_frame(closure_borrow.locals as usize);
+                let frame_info = stack.push_frame(closure.locals as usize);
 
                 for index in (0..arity).rev() {
                   let value = args.pop().expect("");
@@ -149,8 +146,7 @@ impl Machine {
                 // this is so ugly
                 partial_borrow.applied_values.extend(args);
                 let mut args = partial_borrow.applied_values.clone();
-                let proto = partial_borrow.prototype.borrow();
-                let frame_info = stack.push_frame(proto.locals as usize);
+                let frame_info = stack.push_frame(partial_borrow.prototype.locals as usize);
 
                 for index in (0..arity).rev() {
                   let value = args.pop().expect("");
@@ -175,7 +171,7 @@ impl Machine {
         }
       }
       crate::bytecode::Bytecode::LoadConst { index } => {
-        let value = self.prototype.borrow().constant_pool[index as usize];
+        let value = self.prototype.constant_pool[index as usize];
 
         let value = match value {
           crate::value::Constant::Number(n) => crate::value::Value::Number(n),
