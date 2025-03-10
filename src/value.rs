@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use crate::bytecode::Bytecode;
 
 #[derive(Clone)]
@@ -8,7 +6,7 @@ pub enum Value {
   Number(u64),
   Boolean(bool),
   Closure(std::rc::Rc<Prototype>),
-  Partial(std::rc::Rc<RefCell<Partial>>),
+  Partial(std::rc::Rc<Partial>),
 }
 
 impl std::fmt::Debug for Value {

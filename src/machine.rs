@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use crate::{
   stack::{FrameInfo, Stack},
   value::{Partial, Prototype},
@@ -101,9 +99,7 @@ impl Machine {
                   applied_values: args,
                 };
 
-                stack.push(crate::value::Value::Partial(std::rc::Rc::new(
-                  RefCell::new(partial),
-                )));
+                stack.push(crate::value::Value::Partial(std::rc::Rc::new(partial)));
 
                 Cont::Continue
               }
@@ -127,26 +123,33 @@ impl Machine {
             }
           }
           crate::value::Value::Partial(ref partial) => {
-            let mut partial_borrow = partial.borrow_mut();
-            let arity = partial_borrow.arity;
+            let arity = partial.arity;
 
-            let applied = partial_borrow.applied;
+            let applied = partial.applied;
             let new_applied = applied + arguments;
 
             match new_applied.cmp(&arity) {
               std::cmp::Ordering::Less => {
-                partial_borrow.applied_values.extend(args);
-                partial_borrow.applied = new_applied;
+                let mut applied_values = partial.applied_values.clone();
+                applied_values.extend(args);
 
-                stack.push(crate::value::Value::Partial(partial.clone()));
+                let partial = Partial {
+                  arity,
+                  applied: new_applied,
+                  prototype: partial.prototype.clone(),
+                  applied_values,
+                };
+
+                stack.push(crate::value::Value::Partial(std::rc::Rc::new(partial)));
 
                 Cont::Continue
               }
               std::cmp::Ordering::Equal => {
-                // this is so ugly
-                partial_borrow.applied_values.extend(args);
-                let mut args = partial_borrow.applied_values.clone();
-                let frame_info = stack.push_frame(partial_borrow.prototype.locals as usize);
+                let mut applied_values = partial.applied_values.clone();
+                applied_values.extend(args);
+                let mut args = applied_values;
+
+                let frame_info = stack.push_frame(partial.prototype.locals as usize);
 
                 for index in (0..arity).rev() {
                   let value = args.pop().expect("");
@@ -156,10 +159,7 @@ impl Machine {
                 self.stack_frame.push(Frame {
                   ip: std::mem::replace(&mut self.ip, 0),
                   frame_info,
-                  prototype: std::mem::replace(
-                    &mut self.prototype,
-                    partial_borrow.prototype.clone(),
-                  ),
+                  prototype: std::mem::replace(&mut self.prototype, partial.prototype.clone()),
                 });
 
                 Cont::Continue

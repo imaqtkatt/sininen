@@ -52,6 +52,8 @@ fn main() {
     .emit(Bytecode::LoadConst { index: 1 })
     .emit(Bytecode::Load { index: 0 })
     .emit(Bytecode::Call { arguments: 1 })
+    .emit(Bytecode::Load { index: 0 })
+    .emit(Bytecode::Call { arguments: 1 })
     .emit(Bytecode::Return)
     .prototype(
       PrototypeBuilder::new()
